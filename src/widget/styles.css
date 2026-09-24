@@ -21,9 +21,11 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .card { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
 .emoji { font-size: 28px; }
 .name { font-size: 15px; white-space: nowrap; }
 .meta { color: var(--muted); font-size: 12px; }
 .price { font-weight: 600; }
 
 .empty { color: var(--muted); }
+.widget-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 14px; }
