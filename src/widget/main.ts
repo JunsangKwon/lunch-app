@@ -7,15 +7,18 @@ const root = document.querySelector<HTMLDivElement>("#root")!;
 const app = new App({ name: "lunch-widget", version: "0.1.0" }, {});
 
 let candidates: Restaurant[] = [];
+let selectedId: string | null = null;
+let spinning = false;
 
 app.addEventListener("toolresult", ({ structuredContent }) => {
     candidates = ((structuredContent ?? {}) as LunchResult).candidates ?? [];
+    selectedId = null;
     render();
 });
 
 function card(restaurant: Restaurant): string {
     return `
-      <li class="card" data-id="${restaurant.id}">
+      <li class="card${restaurant.id === selectedId ? " selected" : ""}" data-id="${restaurant.id}">
         <span class="emoji">${restaurant.emoji}</span>
         <strong class="name">${restaurant.name}</strong>
         <span class="meta">${restaurant.category} · 도보 ${restaurant.walkMinutes}분</span>
@@ -24,11 +27,44 @@ function card(restaurant: Restaurant): string {
 }
 
 function render(): void {
+    const selected = candidates.find((c) => c.id === selectedId);
     root.innerHTML = `
-      <header class="widget-header"><h1>오늘의 점심 후보</h1></header>
+      <header class="widget-header">
+        <h1>오늘의 점심 후보</h1>
+        <button type="button" class="spin" ${candidates.length === 0 || spinning ? "disabled" : ""}>🎲 룰렛 돌리기</button>
+      </header>
       ${candidates.length === 0
         ? `<p class="empty">조건에 맞는 식당이 없어요. 예산이나 거리를 늘려 보세요.</p>`
-        : `<ul class="cards">${candidates.map(card).join("")}</ul>`}`;
+        : `<ul class="cards">${candidates.map(card).join("")}</ul>`}
+      <footer class="widget-footer">
+        <span>${selected ? `🎉 오늘은 <b>${selected.name}</b>!` : "룰렛을 돌려 오늘의 점심을 정하세요."}</span>
+        <button type="button" class="share" ${selected ? "" : "disabled"}>팀에 공유</button>
+      </footer>`;
+    root.querySelector(".spin")?.addEventListener("click", spin);
+    root.querySelector(".share")?.addEventListener("click", share);
+}
+
+/** 카드를 차례로 강조하다가 하나에 멈춘다. */
+function spin(): void {
+    spinning = true;
+    const target = Math.floor(Math.random() * candidates.length);
+    const steps = candidates.length * 3 + target;
+    let step = 0;
+    const timer = setInterval(() => {
+        selectedId = candidates[step % candidates.length].id;
+        render();
+        if (++step > steps) {
+            clearInterval(timer);
+            spinning = false;
+            render();
+        }
+    }, 90);
+}
+
+async function share(): Promise<void> {
+    const selected = candidates.find((c) => c.id === selectedId);
+    if (!selected) return;
+    await app.sendMessage({ role: "user", content: [{ type: "text", text: `오늘 점심은 ${selected.name}(으)로 정했어요! 팀원들에게 공지 문구를 써 줘.` }] });
 }
 
 render();
