@@ -1,7 +1,7 @@
 import { RESTAURANTS, type Restaurant } from "./restaurants.js";
 
 /** 한 번에 추천하는 후보 수. */
-export const DEFAULT_COUNT = 3;
+export const DEFAULT_COUNT = 8;
 
 export type Visit = { restaurantId: string; date: string };
 
