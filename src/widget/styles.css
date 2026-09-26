@@ -27,6 +27,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .name { font-size: 15px; white-space: nowrap; }
 .meta { color: var(--muted); font-size: 12px; }
 .price { font-weight: 600; }
+.vote { align-self: flex-start; margin-top: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); cursor: pointer; }
 
 .empty { color: var(--muted); }
 .widget-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 14px; }

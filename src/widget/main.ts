@@ -1,18 +1,20 @@
 import { App } from "@modelcontextprotocol/ext-apps";
 import type { Restaurant } from "../domain/restaurants.js";
 
-type LunchResult = { candidates?: Restaurant[] };
+type LunchResult = { candidates?: Restaurant[]; votes?: Record<string, number> };
 
 const root = document.querySelector<HTMLDivElement>("#root")!;
 const app = new App({ name: "lunch-widget", version: "0.1.0" }, {});
 
 let candidates: Restaurant[] = [];
+let votes: Record<string, number> = {};
 let selectedId: string | null = null;
 let spinning = false;
 
 app.addEventListener("toolresult", ({ structuredContent }) => {
-    candidates = ((structuredContent ?? {}) as LunchResult).candidates ?? [];
-    selectedId = null;
+    const result = (structuredContent ?? {}) as LunchResult;
+    candidates = result.candidates ?? candidates;
+    votes = result.votes ?? votes;
     render();
 });
 
@@ -23,6 +25,7 @@ function card(restaurant: Restaurant): string {
         <strong class="name">${restaurant.name}</strong>
         <span class="meta">${restaurant.category} · 도보 ${restaurant.walkMinutes}분</span>
         <span class="price">${restaurant.price.toLocaleString("ko-KR")}원</span>
+        <button type="button" class="vote" data-id="${restaurant.id}">👍 ${votes[restaurant.id] ?? 0}</button>
       </li>`;
 }
 
@@ -37,11 +40,12 @@ function render(): void {
         ? `<p class="empty">조건에 맞는 식당이 없어요. 예산이나 거리를 늘려 보세요.</p>`
         : `<ul class="cards">${candidates.map(card).join("")}</ul>`}
       <footer class="widget-footer">
-        <span>${selected ? `🎉 오늘은 <b>${selected.name}</b>!` : "룰렛을 돌려 오늘의 점심을 정하세요."}</span>
+        <span>${selected ? `🎉 오늘은 <b>${selected.name}</b>!` : "룰렛을 돌리거나 마음에 드는 곳에 투표하세요."}</span>
         <button type="button" class="share" ${selected ? "" : "disabled"}>팀에 공유</button>
       </footer>`;
     root.querySelector(".spin")?.addEventListener("click", spin);
     root.querySelector(".share")?.addEventListener("click", share);
+    root.querySelectorAll<HTMLButtonElement>(".vote").forEach((button) => button.addEventListener("click", () => vote(button.dataset.id!)));
 }
 
 /** 카드를 차례로 강조하다가 하나에 멈춘다. */
@@ -59,6 +63,12 @@ function spin(): void {
             render();
         }
     }, 90);
+}
+
+async function vote(restaurantId: string): Promise<void> {
+    const result = await app.callServerTool({ name: "vote_lunch", arguments: { restaurantId, voter: "나" } });
+    votes = (result.structuredContent as LunchResult | undefined)?.votes ?? votes;
+    render();
 }
 
 async function share(): Promise<void> {

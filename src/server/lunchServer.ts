@@ -3,6 +3,7 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@model
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { recommendLunch } from "../domain/recommend.js";
+import { castVote, voteSummary } from "../domain/votes.js";
 
 /** 추천 결과를 그리는 위젯 리소스. */
 export const WIDGET_URI = "ui://lunch/recommendations.html";
@@ -18,7 +19,7 @@ async function widgetHtml(): Promise<string> {
 export function createLunchServer(): McpServer {
     const server = new McpServer({ name: "lunch-app", version: "0.1.0" });
 
-    registerAppResource(server, "점심 추천 위젯", WIDGET_URI, { description: "추천 식당 카드 화면" }, async () => ({
+    registerAppResource(server, "점심 추천 위젯", WIDGET_URI, { description: "추천 식당 카드, 룰렛, 팀 투표 화면" }, async () => ({
         contents: [{ uri: WIDGET_URI, mimeType: RESOURCE_MIME_TYPE, text: await widgetHtml() }],
     }));
 
@@ -36,7 +37,25 @@ export function createLunchServer(): McpServer {
         const candidates = recommendLunch({ ...args, today: new Date().toISOString().slice(0, 10) });
         return {
             content: [{ type: "text", text: candidates.length > 0 ? `추천 후보: ${candidates.map((c) => c.name).join(", ")}` : "조건에 맞는 식당이 없습니다." }],
-            structuredContent: { candidates },
+            structuredContent: { candidates, votes: voteSummary() },
+        };
+    });
+
+    registerAppTool(server, "vote_lunch", {
+        title: "점심 투표",
+        description: "추천 후보 중 하나에 투표하고 현재 득표 현황을 돌려준다.",
+        inputSchema: z.object({
+            restaurantId: z.string().describe("투표할 식당 ID"),
+            voter: z.string().describe("투표한 사람 이름"),
+        }),
+        annotations: { readOnlyHint: false, openWorldHint: false },
+        _meta: { ui: { resourceUri: WIDGET_URI, visibility: ["app"] } },
+    }, async ({ restaurantId, voter }) => {
+        castVote({ restaurantId, voter });
+        const votes = voteSummary();
+        return {
+            content: [{ type: "text", text: `${voter}님의 투표를 기록했습니다.` }],
+            structuredContent: { votes },
         };
     });
 
