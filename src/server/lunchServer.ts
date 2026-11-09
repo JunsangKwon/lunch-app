@@ -25,11 +25,12 @@ export function createLunchServer(): McpServer {
 
     registerAppTool(server, "recommend_lunch", {
         title: "점심 추천",
-        description: "회사 근처 식당 중에서 예산, 도보 시간, 최근 방문 기록을 고려해 점심 후보를 추천한다.",
+        description: "회사 근처 식당 중에서 예산, 도보 시간, 최근 방문 기록을 고려해 점심 후보를 추천하고 가격순 또는 도보순으로 정렬한다.",
         inputSchema: z.object({
             budget: z.number().int().positive().optional().describe("1인 예산(원)"),
             maxWalkMinutes: z.number().int().positive().optional().describe("최대 도보 시간(분)"),
             recentVisits: z.array(z.object({ restaurantId: z.string(), date: z.string() })).optional().describe("최근 방문 기록"),
+            sort: z.enum(["price", "walk"]).optional().describe("후보 정렬 기준: 가격순 또는 도보순"),
         }),
         annotations: { readOnlyHint: true, openWorldHint: false },
         _meta: { ui: { resourceUri: WIDGET_URI } },

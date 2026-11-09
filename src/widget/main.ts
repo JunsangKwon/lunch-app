@@ -1,19 +1,36 @@
 import { App } from "@modelcontextprotocol/ext-apps";
 import type { Restaurant } from "../domain/restaurants.js";
+import { sortRestaurants, type Sort } from "../domain/recommend.js";
 
 type LunchResult = { candidates?: Restaurant[]; votes?: Record<string, number> };
 
 const root = document.querySelector<HTMLDivElement>("#root")!;
 const app = new App({ name: "lunch-widget", version: "0.1.0" }, {});
 
+let recommendationOrder: Restaurant[] = [];
 let candidates: Restaurant[] = [];
+let sort: Sort | undefined;
 let votes: Record<string, number> = {};
 let selectedId: string | null = null;
 let spinning = false;
 
+function updateCandidates(): void {
+    candidates = sort ? sortRestaurants(recommendationOrder, sort) : recommendationOrder;
+}
+
+app.addEventListener("toolinput", ({ arguments: input }) => {
+    const requestedSort = input?.sort;
+    sort = requestedSort === "price" || requestedSort === "walk" ? requestedSort : undefined;
+    updateCandidates();
+    render();
+});
+
 app.addEventListener("toolresult", ({ structuredContent }) => {
     const result = (structuredContent ?? {}) as LunchResult;
-    candidates = result.candidates ?? candidates;
+    if (result.candidates) {
+        recommendationOrder = result.candidates;
+        updateCandidates();
+    }
     votes = result.votes ?? votes;
     render();
 });
@@ -21,10 +38,14 @@ app.addEventListener("toolresult", ({ structuredContent }) => {
 function card(restaurant: Restaurant): string {
     return `
       <li class="card${restaurant.id === selectedId ? " selected" : ""}" data-id="${restaurant.id}">
-        <span class="emoji">${restaurant.emoji}</span>
-        <strong class="name">${restaurant.name}</strong>
-        <span class="meta">${restaurant.category} · 도보 ${restaurant.walkMinutes}분</span>
-        <span class="price">${restaurant.price.toLocaleString("ko-KR")}원</span>
+        <div class="card-heading">
+          <span class="emoji" aria-hidden="true">${restaurant.emoji}</span>
+          <div class="details">
+            <strong class="name">${restaurant.name}</strong>
+            <span class="meta">${restaurant.category} · 도보 ${restaurant.walkMinutes}분</span>
+          </div>
+        </div>
+        <strong class="price">${restaurant.price.toLocaleString("ko-KR")}원</strong>
         <button type="button" class="vote" data-id="${restaurant.id}">👍 ${votes[restaurant.id] ?? 0}</button>
       </li>`;
 }
@@ -34,6 +55,10 @@ function render(): void {
     root.innerHTML = `
       <header class="widget-header">
         <h1>오늘의 점심 후보</h1>
+        <div class="sort-controls" role="group" aria-label="후보 정렬">
+          <button type="button" class="sort-option${sort === "price" ? " active" : ""}" data-sort="price" aria-pressed="${sort === "price"}" ${candidates.length === 0 ? "disabled" : ""}>가격순</button>
+          <button type="button" class="sort-option${sort === "walk" ? " active" : ""}" data-sort="walk" aria-pressed="${sort === "walk"}" ${candidates.length === 0 ? "disabled" : ""}>도보순</button>
+        </div>
         <button type="button" class="spin" ${candidates.length === 0 || spinning ? "disabled" : ""}>🎲 룰렛 돌리기</button>
       </header>
       ${candidates.length === 0
@@ -43,6 +68,12 @@ function render(): void {
         <span>${selected ? `🎉 오늘은 <b>${selected.name}</b>!` : "룰렛을 돌리거나 마음에 드는 곳에 투표하세요."}</span>
         <button type="button" class="share" ${selected ? "" : "disabled"}>팀에 공유</button>
       </footer>`;
+    root.querySelectorAll<HTMLButtonElement>(".sort-option").forEach((button) => button.addEventListener("click", () => {
+        const nextSort = button.dataset.sort === "price" ? "price" : "walk";
+        sort = nextSort;
+        updateCandidates();
+        render();
+    }));
     root.querySelector(".spin")?.addEventListener("click", spin);
     root.querySelector(".share")?.addEventListener("click", share);
     root.querySelectorAll<HTMLButtonElement>(".vote").forEach((button) => button.addEventListener("click", () => vote(button.dataset.id!)));

@@ -17,7 +17,15 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .panel label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .panel input { padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; }
 .panel button { padding: 9px; border: 0; border-radius: 8px; background: #18181b; color: #fff; cursor: pointer; }
-.log { margin: 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
+.log { display: flex; flex-direction: column; gap: 7px; margin: 0; padding: 0; list-style: none; font-size: 12px; }
+.log-item { display: grid; grid-template-columns: auto 1fr; gap: 4px 7px; padding: 8px 9px; border: 1px solid var(--log-border); border-left: 3px solid var(--log-color); border-radius: 8px; background: var(--log-bg); color: var(--log-color); }
+.log-time { grid-column: 1 / -1; color: var(--muted); font-size: 10px; }
+.log-label { width: fit-content; padding: 2px 5px; border-radius: 4px; background: var(--log-label-bg); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.log-message { min-width: 0; color: var(--text); overflow-wrap: anywhere; }
+.log-connection { --log-color: #2563eb; --log-bg: #eff6ff; --log-border: #bfdbfe; --log-label-bg: #dbeafe; }
+.log-tool { --log-color: #7c3aed; --log-bg: #f5f3ff; --log-border: #ddd6fe; --log-label-bg: #ede9fe; }
+.log-widget { --log-color: #0f766e; --log-bg: #f0fdfa; --log-border: #99f6e4; --log-label-bg: #ccfbf1; }
+.log-error { --log-color: #b91c1c; --log-bg: #fef2f2; --log-border: #fecaca; --log-label-bg: #fee2e2; }
 .chat { display: flex; flex-direction: column; gap: 12px; max-width: 760px; padding: 28px 32px; }
 .bubble { max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
 .bubble.user { align-self: flex-end; background: var(--surface); }
